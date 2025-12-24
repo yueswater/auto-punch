@@ -70,3 +70,46 @@ class PunchClient:
 
         if resp.status_code != 302:
             raise RuntimeError("Clock-in failed")
+        
+    def break_start(self) -> None:
+        r: Response = self.session.get(url=settings.dashboard_url)
+        csrf: str = extract_csrf(html=r.text)
+
+        payload = {
+            "csrfmiddlewaretoken": csrf,
+            "lat": settings.company_lat,
+            "lng": settings.company_lng,
+            "accuracy": random.randint(10, 50),
+        }
+
+        resp = self.session.post(
+            settings.break_start_url,
+            data=payload,
+            headers={"Referer": settings.dashboard_url},
+            allow_redirects=False,
+        )
+
+        if resp.status_code != 302:
+            raise RuntimeError("Break start failed")
+
+
+    def break_cancel(self) -> None:
+        r: Response = self.session.get(url=settings.dashboard_url)
+        csrf: str = extract_csrf(html=r.text)
+
+        payload = {
+            "csrfmiddlewaretoken": csrf,
+            "lat": settings.company_lat,
+            "lng": settings.company_lng,
+            "accuracy": random.randint(10, 50),
+        }
+
+        resp = self.session.post(
+            settings.break_cancel_url,
+            data=payload,
+            headers={"Referer": settings.dashboard_url},
+            allow_redirects=False,
+        )
+
+        if resp.status_code != 302:
+            raise RuntimeError("Break cancel failed")

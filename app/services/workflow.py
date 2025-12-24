@@ -46,12 +46,17 @@ def start_work_day() -> None:
     break_end = first_shift_end + timedelta(hours=settings.breaktime)
     clock_out_time = break_end + timedelta(hours=settings.second_shift)
 
-    # Logging
-    logging.info(f"Clock-in: {clock_in_time}")
-    logging.info(f"First shift end: {first_shift_end}")
-    logging.info(f"Break end: {break_end}")
-    logging.info(f"Clock-out: {clock_out_time}")
+    # Work until break
+    sleep_until(first_shift_end)
+    logging.info("Break start")
+    client.break_start()
 
-    # Wait & Clock-out
+    # Break time
+    sleep_until(break_end)
+    logging.info("Break end")
+    client.break_cancel()
+
+    # Work until clock-out
     sleep_until(clock_out_time)
+    logging.info("Clock out")
     client.clock_out()
