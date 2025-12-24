@@ -5,18 +5,10 @@ from app.core.config import settings
 from app.services.client import PunchClient
 from app.services.time_provider import now_taipei
 from app.services.time_policy import is_time_in_window
+from app.services.form_logger import log_event, get_pending_events, mark_event_done
 from app.utils.time_parser import parse_hhmm
 
-logging.basicConfig(level=logging.INFO)
-
-def sleep_until(target: datetime) -> None:
-    now = now_taipei()
-    seconds = (target - now).total_seconds()
-
-    if seconds <= 0:
-        return
-    
-    time.sleep(seconds)
+logger = logging.getLogger(__name__)
 
 def start_work_day() -> None:
     # Fetch now time
@@ -42,21 +34,44 @@ def start_work_day() -> None:
     clock_in_time = now_taipei()
 
     # Calculate key timing
-    first_shift_end = clock_in_time + timedelta(hours=settings.first_shift)
-    break_end = first_shift_end + timedelta(hours=settings.breaktime)
-    clock_out_time = break_end + timedelta(hours=settings.second_shift)
+    break_start_time = clock_in_time + timedelta(hours=settings.first_shift)
+    break_end_time = break_start_time + timedelta(hours=settings.breaktime)
+    clock_out_time = break_end_time + timedelta(hours=settings.second_shift)
 
-    # Work until break
-    sleep_until(first_shift_end)
-    logging.info("Break start")
-    client.break_start()
+    # Logging
+    log_event(date=clock_in_time.date(), action="clock_in", time=clock_in_time)
+    log_event(date=clock_in_time.date(), action="break_start", time=break_start_time)
+    log_event(date=clock_in_time.date(), action="break_end", time=break_end_time)
+    log_event(date=clock_in_time.date(), action="clock_out", time=clock_out_time)
 
-    # Break time
-    sleep_until(break_end)
-    logging.info("Break end")
-    client.break_cancel()
+    logger.info("Work day registered")
 
-    # Work until clock-out
-    sleep_until(clock_out_time)
-    logging.info("Clock out")
-    client.clock_out()
+def run_pending_events() -> None:
+    now = now_taipei()
+    pending_events = get_pending_events(now)
+
+    if not pending_events:
+        logger.info("No pending events")
+        return
+
+    client = PunchClient()
+    client.login()
+
+    for event in pending_events:
+        action = event["action"]
+        logger.info(f"Executing event: {action}")
+
+        if action == "break_start":
+            client.break_start()
+
+        elif action == "break_end":
+            client.break_cancel()
+
+        elif action == "clock_out":
+            client.clock_out()
+
+        else:
+            logger.warning(f"Unknown action: {action}")
+            continue
+
+        mark_event_done(event)

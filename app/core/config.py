@@ -6,6 +6,15 @@ class Settings(BaseSettings):
     dashboard_url: str
     clockin_url: str
     clockout_url: str
+    break_start_url: str
+    break_cancel_url: str
+    google_form_url: str
+
+    # Entry points
+    form_entry_date: str
+    form_entry_action: str
+    form_entry_time_hour: str
+    form_entry_time_minute: str
     
     # Credentials
     username: str
