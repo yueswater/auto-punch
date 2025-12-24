@@ -58,6 +58,7 @@ class PunchClient:
             "csrfmiddlewaretoken": csrf,
             "lat": settings.company_lat,
             "lng": settings.company_lng,
+            "accuracy": random.randint(10, 50)
         }
 
         resp = self.session.post(
