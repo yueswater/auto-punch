@@ -9,6 +9,6 @@ app.include_router(router=punch.router)
 def health():
     return {"status": "ok"}
 
-@app.get("ping")
+@app.get("/ping")
 def ping():
     return "pong"
